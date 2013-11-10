@@ -1,0 +1,177 @@
+' ******** Variablen ********
+Define RolloDisableAutomatic As Byte 'Rollos für die Automatik deaktivieren
+RolloDisableAutomatic = Off
+
+Define HolidayMode As Bit
+Define MinutesSinceMidnight As Word
+
+Define TimeTable As String * 37 ' = 6 * 2[Hoch und Runter] * (2[Word für Zeit] + 1[Byte für Tag des Monats der letzen Ausführung])
+Define ^TimeTableMinutesSinceMidnight As Word ' Die jeweils ersten beiden Bytes
+Define ^TimeTableLastExecDayOfMonth As Byte ' Das jeweils dritte Byte
+
+Define Rollo_Index2 As Byte
+Define Rollo_Index3 As Byte
+
+Function initRolloTimeTable()
+  MinutesSinceMidnight = Minute + (Hour * 60)
+  For Index1 = 1 To 6
+    ' * Runter *
+    TimeTableMinutesSinceMidnight = ^TimeTable + ((Index1 - 1) * 6)
+    TimeTableLastExecDayOfMonth = TimeTableMinutesSinceMidnight + 2
+    @TimeTableMinutesSinceMidnight = calculateNextDownTime(Index1, LookTab(DOWN_TIME, Index1 - 1) <= MinutesSinceMidnight)
+    If (@TimeTableMinutesSinceMidnight <= MinutesSinceMidnight) Then 'Morgen
+      @TimeTableLastExecDayOfMonth = Day
+    Else 'Heute noch
+      @TimeTableLastExecDayOfMonth = Day - 1
+    End If
+    ' * Hoch *
+    TimeTableMinutesSinceMidnight = ^TimeTable + ((Index1 - 1) * 6) + 3
+    TimeTableLastExecDayOfMonth = TimeTableMinutesSinceMidnight + 2
+    @TimeTableMinutesSinceMidnight = calculateNextUpTime(Index1, LookTab(UP_TIME, Index1 - 1) <= MinutesSinceMidnight)
+    If (@TimeTableMinutesSinceMidnight <= MinutesSinceMidnight) Then 'Morgen
+      @TimeTableLastExecDayOfMonth = Day
+    Else 'Heute noch
+      @TimeTableLastExecDayOfMonth = Day - 1
+    End If
+  Next
+End Function
+
+Function updateRollos()
+  ' *** TimeTable checken ****
+  MinutesSinceMidnight = Minute + (Hour * 60)
+  For Index1 = 1 To 6
+    ' * Runter *
+    TimeTableMinutesSinceMidnight = ^TimeTable + ((Index1 - 1) * 6)
+    TimeTableLastExecDayOfMonth = TimeTableMinutesSinceMidnight + 2
+    If (@TimeTableLastExecDayOfMonth <> Day) And (@TimeTableMinutesSinceMidnight <= MinutesSinceMidnight) Then
+      Rollo_Index2 = (Index1 * 2) - 1 'Geht wg. Compilerfehler nicht in eine Zeile
+      If (getRolloAutomaticState(Index1)) Then
+        relaisImpulse(Rollo_Index2, LookTab(IMPULSE_LENGTH, Index1 - 1))
+      End If        
+      @TimeTableMinutesSinceMidnight = calculateNextDownTime(Index1, True)
+      @TimeTableLastExecDayOfMonth = Day
+    End If
+    ' * Hoch *
+    TimeTableMinutesSinceMidnight = ^TimeTable + ((Index1 - 1) * 6) + 3
+    TimeTableLastExecDayOfMonth = TimeTableMinutesSinceMidnight + 2
+    If (@TimeTableLastExecDayOfMonth <> Day) And (@TimeTableMinutesSinceMidnight <= MinutesSinceMidnight) Then
+      Rollo_Index2 = Index1 * 2 'Geht wg. Compilerfehler nicht in eine Zeile
+      If (getRolloAutomaticState(Index1)) Then
+        relaisImpulse(Rollo_Index2, LookTab(IMPULSE_LENGTH, Index1 - 1))
+      End If        
+      @TimeTableMinutesSinceMidnight = calculateNextUpTime(Index1, True)
+      @TimeTableLastExecDayOfMonth = Day
+    End If
+  Next
+End Function
+
+Function getRolloAutomaticState(Index AS Byte)
+  Rollo_Index3 = 1
+  Rollo_Index3 = Rollo_Index3 Shl Index
+  Rollo_Index3 = Rollo_Index3 Shr 1
+  Rollo_Index3 = RolloDisableAutomatic And Rollo_Index3  
+  If (Rollo_Index3 = 0) Then Return True Else Return False
+End Function
+
+Function setRolloAutomaticState(Index AS Byte, State As Bit)
+  Rollo_Index2 = 1
+  Rollo_Index2 = Rollo_Index2 Shl Index
+  Rollo_Index2 = Rollo_Index2 Shr 1
+  If (State) Then 'Aktivieren
+    Rollo_Index2 = not Rollo_Index2
+    Rollo_Index2 = Rollo_Index2 And RolloDisableAutomatic '1 ggf löschen     
+  Else
+    Rollo_Index2 = Rollo_Index2 Or RolloDisableAutomatic '1 ggf setzen
+  End If      
+  RolloDisableAutomatic = Rollo_Index2  
+End Function
+
+Function menuShowUpDownTimes()
+  Backlight = BACKLIGHT_ON
+  LCD.Init
+  LCD.Pos 1, 1
+  LCD.Print "Zeiten anzeigen"
+  LCD.Pos 2, 1
+  LCD.Print "1-6?"
+  Do
+    Wait GET_KEY = 255 'Alle Tasten los gelassen
+    Menu_Index1 = GET_KEY
+    If (Menu_Index1 >= 1 And Menu_Index1 <= 6) Then
+      For Menu_Index2 = 0 To 1
+        TimeTableMinutesSinceMidnight = ^TimeTable + ((Menu_Index1 - 1) * 6) + (3 * Menu_Index2)
+        TimeTableLastExecDayOfMonth = TimeTableMinutesSinceMidnight + 2
+        LCD.Clear
+        LCD.Pos 1, 1
+        LCD.Print "Rollo "
+        LCD.Print Menu_Index1
+        If (Menu_Index2 = 0) Then LCD.Print " runter:" Else LCD.Print " rauf:"
+        LCD.Pos 2, 1
+        If (@TimeTableLastExecDayOfMonth <> Day) Then LCD.Print "Heute " Else LCD.Print "Morgen "
+        LCD.Print @TimeTableMinutesSinceMidnight / 60
+        LCD.Print ":"
+        If (@TimeTableMinutesSinceMidnight mod 60 < 10) Then LCD.Print "0"
+        LCD.Print @TimeTableMinutesSinceMidnight mod 60
+        Wait GET_KEY = 255 'Alle Tasten los gelassen
+        Wait GET_KEY <> 255 ' Irgend eine Taste
+      Next 'Menu_Index2
+      Exit Do 'Fertig
+    End If ' Menu_Index1
+  Loop Until Menu_Index1 = 10 'Abbruch
+  Wait GET_KEY = 255 'Alle Tasten los gelassen
+  LCD.Clear
+  LCD.Off
+'  Backlight = BACKLIGHT_OFF
+End Function
+
+Function menuSetRolloAutomatic()
+  Backlight = BACKLIGHT_ON
+  LCD.Init
+  LCD.Pos 1, 1
+  LCD.Print "Automatiksperre"
+  LCD.Pos 2, 1
+  LCD.Print "1-6 oder 7: Alle?"
+  Do
+    Wait GET_KEY = 255 'Alle Tasten los gelassen
+    Menu_Index1 = GET_KEY
+    If (Menu_Index1 >= 1 And Menu_Index1 <= 7) Then
+      Exit Do 'Rollo ausgewählt
+    End If ' Menu_Index1
+  Loop Until Menu_Index1 = 10 'Abbruch
+  If (Menu_Index1 >= 1 And Menu_Index1 <= 7) Then
+    LCD.Clear
+    LCD.Pos 1, 1
+    If (Menu_Index1 = 7) Then LCD.Print "Alle Rollos" Else LCD.Print "Rollo " & Menu_Index1
+    LCD.Print " Auto"
+    LCD.Pos 2, 1
+    LCD.Print "F1:An F2:Sperren"
+    Do
+      Wait GET_KEY = 255 'Alle Tasten los gelassen
+      Menu_Index2 = GET_KEY
+      If (Menu_Index2 = 12) Then
+        If (Menu_Index1 = 7) Then 
+          For Menu_Index1 = 1 To 6               
+            setRolloAutomaticState(Menu_Index1, True)
+          Next
+        Else
+          setRolloAutomaticState(Menu_Index1, True)
+        End If                                     
+        Exit Do 'Fertig
+      Else
+        If (Menu_Index2 = 13) Then
+          If (Menu_Index1 = 7) Then
+            For Menu_Index1 = 1 To 6
+              setRolloAutomaticState(Menu_Index1, False)
+            Next
+          Else                      
+            setRolloAutomaticState(Menu_Index1, False)
+          End If          
+          Exit Do 'Fertig
+        End If
+      End If        
+    Loop Until Menu_Index1 = 10 'Abbruch
+  End If  
+  Wait GET_KEY = 255 'Alle Tasten los gelassen
+  LCD.Clear
+  LCD.Off
+'  Backlight = BACKLIGHT_OFF
+End Function

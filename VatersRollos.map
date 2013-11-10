@@ -1,0 +1,146 @@
+Funktionen und Sprungmarken:
+
+Name                      Offset  Typ          Verwendet  Größe
+----                      ------  ---          ---------  -----
+redo                      15      Label        x
+exit                      375     Label        x
+exit2                     400     Label        x
+dcftest_start             3987    Label        x
+dcftest_display_bar_graph 4027    Label        x
+dcftest_signal_received   4163    Label        x
+get_key                   10      Funktion     x          396
+dcf_sync                  409     Funktion     x          66
+initrollotimetable        483     Funktion     x          203
+updaterollos              689     Funktion     x          255
+getrolloautomaticstate    947     Funktion     x          52
+setrolloautomaticstate    1002    Funktion     x          52
+menushowupdowntimes       1057    Funktion     x          353
+menusetrolloautomatic     1413    Funktion     x          428
+menumanualupdown          1844    Funktion     x          274
+updaterelaisio            2186    Funktion     x          78
+setrelaisstate            2267    Funktion     x          260
+getrelaisstate            2530    Funktion     x          242
+relaisimpulse             2775    Funktion     x          134
+__relaisio_updaterelais   2912    Funktion     x          74
+showtime                  2989    Funktion     x          110
+showdowstring             3102    Funktion     x          110
+showdate                  3215    Funktion     x          73
+calculatesunsin           3291    Funktion     x          119
+issummertime              3413    Funktion     x          107
+__timetablecalccos        3523    Funktion     x          179
+getrandvalue              3705    Funktion     x          52
+calculatenextdowntime     3760    Funktion     x          90
+calculatenextuptime       3853    Funktion     x          90
+dcftest                   3946    Funktion     x          246
+
+Variablen:
+
+Name                Index  Offset     Typ          Verwendet
+----                -----  ------     ---          ---------
+FPACC1EX            1      (0)        Byte         x
+FPACC1MN            2      (1)        Byte         x
+MANT1LO             2      (2:2)      Word         x
+FPACC1MN1           3      (2)        Byte         x
+FPACC1MN2           4      (3)        Byte         x
+MANTSGN1            5      (4)        Byte         x
+FPACC2EX            6      (5)        Byte         x
+FPACC2MN            7      (6)        Byte         x
+FPACC2MN1           8      (7)        Byte         x
+FPACC2MN2           9      (8)        Byte         x
+MANTSGN2            10     (9)        Byte         x
+EXPSIGN             11     (10)       Byte         x
+PWR10EXP            12     (11)       Byte         x
+V0                  13     (12)       Byte         x
+V1                  14     (13)       Byte         x
+V2                  15     (14)       Byte         x
+V3                  16     (15)       Byte         x
+_sx3p               -                 Byte         -
+backlight           16     (15)       Port         x
+index1              22     (21)       Byte         x
+summertime          -                 BIT          -
+_get_key_adc8       8      (7)        AD           x
+_get_key_keycode    43     (42)       Byte         x
+_get_key_buffer     44     (43)       Byte         x
+_dcf_sync_conf1     45     (44)       Byte         x
+_dcf_sync_sync      137    (17.0)     BIT          x
+rollodisableautomati 46    (45)       Byte         x
+holidaymode         -                 BIT          -
+minutessincemidnight 14    (26:2)     Word         x
+timetable           67     (66:37)    String       x
+timetableminutessinc 47    (46)       Byte         x
+timetablelastexecday 48    (47)       Byte         x
+rollo_index2        49     (48)       Byte         x
+rollo_index3        50     (49)       Byte         x
+_getrolloautomaticst 51    (50)       Byte         x
+_setrolloautomaticst 52    (51)       Byte         x
+_setrolloautomaticst 138   (17.1)     BIT          x
+menu_index1         53     (52)       Byte         x
+menu_index2         -                 Byte         -
+offset              54     (53)       Byte         x
+_menumanualupdown_up 139   (17.2)     BIT          x
+relaisio_sda        9      (8)        Port         x
+relaisio_scl        10     (9)        Port         x
+relaisio_internalrel 29    (28)       Port         x
+relaisio_internalrel 30    (29)       Port         x
+relaisio_internalrel 31    (30)       Port         x
+relaisio_internalrel 32    (31)       Port         x
+relaisio_externalrel 1     (0)        Port         x
+relaisio_externalrel 2     (1)        Port         x
+relaisio_externalrel 3     (2)        Port         x
+relaisio_externalrel 4     (3)        Port         x
+relaisio_externalrel 5     (4)        Port         x
+relaisio_externalrel 6     (5)        Port         x
+relaisio_externalrel 7     (6)        Port         x
+relaisio_externalrel 8     (7)        Port         x
+relaisio_externalrel 140   (17.3)     BIT          x
+relaisio_externalrel 16    (15)       Port         x
+relaisio_led1port   25     (24)       Port         x
+relaisio_led2port   26     (25)       Port         x
+relaisio_led3port   27     (26)       Port         x
+relaisio_led4port   28     (27)       Port         x
+relaisio_internalrel 17    (16)       Byte         x
+relaisio_internalrel 129   (16.0)     BIT          x
+relaisio_internalrel 130   (16.1)     BIT          x
+relaisio_internalrel 131   (16.2)     BIT          x
+relaisio_internalrel 132   (16.3)     BIT          x
+relaisio_externalrel 10    (18:2)     Word         x
+relaisio_externalrel 145   (18.0)     BIT          x
+relaisio_externalrel 146   (18.1)     BIT          x
+relaisio_externalrel 147   (18.2)     BIT          x
+relaisio_externalrel 148   (18.3)     BIT          x
+relaisio_externalrel 149   (18.4)     BIT          x
+relaisio_externalrel 150   (18.5)     BIT          x
+relaisio_externalrel 151   (18.6)     BIT          x
+relaisio_externalrel 152   (18.7)     BIT          x
+relaisio_externalrel 153   (19.0)     BIT          x
+relaisio_externalrel 154   (19.1)     BIT          x
+relaisio_turnofftime 104   (103:29)   String       x
+relaisio_timervalue 55     (54)       Byte         x
+relaisio_index1     56     (55)       Byte         x
+relaisio_curtime    15     (28:2)     Word         x
+relaisio_oldtimerval 16    (30:2)     Word         x
+_setrelaisstate_inde 57    (56)       Byte         x
+_setrelaisstate_stat 141   (17.4)     BIT          x
+_getrelaisstate_inde 58    (57)       Byte         x
+_relaisimpulse_index 59    (58)       Byte         x
+_relaisimpulse_lengt 60    (59)       Byte         x
+_showtime_withsecond 142   (17.5)     BIT          x
+_showtime_blinkcolon 143   (17.6)     BIT          x
+_showdate_withlongye 144   (17.7)     BIT          x
+wordvar             17     (32:2)     Word         x
+floatvar            W12    (22:4)     Float        x
+_calculatesunsin_amp 18    (34:2)     Word         x
+_calculatesunsin_for 161   (20.0)     BIT          x
+_issummertime_tomorr 162   (20.1)     BIT          x
+_issummertime_calcda 61    (60)       Byte         x
+___timetablecalccos_ W12   (22:4)     Float        x
+_getrandvalue_groupi 62    (61)       Byte         x
+_calculatenextdownti 63    (62)       Byte         x
+_calculatenextdownti 163   (20.2)     BIT          x
+_calculatenextdownti 19    (36:2)     Word         x
+_calculatenextuptime 64    (63)       Byte         x
+_calculatenextuptime 164   (20.3)     BIT          x
+_calculatenextuptime 20    (38:2)     Word         x
+loop                65     (64)       Byte         x
+bar_graph_length    66     (65)       Byte         x
+signal_monitor      21     (40:2)     Word         x

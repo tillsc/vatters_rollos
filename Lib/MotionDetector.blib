@@ -1,0 +1,105 @@
+{DEFINE MOTION_DETECTOR}
+
+' ********** Konstanten **********
+' Anzahl der erforderlichen Zyklen, um von On zu Off zu wechseln.
+' Sollte groß sein, um kurze "Schalt-Pausen" zu überbrücken => Konstanterer Alarm
+Const MOTION_DETECTOR_STABLE_CHANGE_TO_OFF_COUNT = 255 
+
+' Anzahl der erforderlichen Zyklen, um von Off zu On zu wechseln.
+' Sollte vergleichsweise klein sein. Dadurch schaltet er schneller
+Const MOTION_DETECTOR_STABLE_CHANGE_TO_ON_COUNT = 10 
+
+' ********** Ports **********
+Define MotionDetector1Port As AD[1]
+Define MotionDetector2Port As AD[2]
+Define MotionDetector3Port As AD[3]
+Define MotionDetector4Port As AD[4]
+
+' ********** Variablen **********
+Define MotionDetectorStableStates As Byte 'Sichere Zustände der Ports (entprellt)
+MotionDetectorStableStates = 0 
+
+Define MotionDetectorStateChangeCounters(4) As Byte[229] 'Zähler für Zustandswechsel der Ports
+Define ^MotionDetectorStateChangeCounter As Byte
+
+Define Value As Byte
+Define Mask As Byte
+Define MotionDetector_Index1 As Byte
+Define State As Bit
+
+Function getMotionDetectorCurrentState(Index As Byte)
+  Select Case Index
+    Case 1
+      Value = MotionDetector1Port
+    Case 2
+      Value = MotionDetector2Port
+    Case 3
+      Value = MotionDetector3Port
+    Case 4
+      Value = MotionDetector4Port
+    Else
+      Value = 0
+  End Select
+  If (Value > 200) Then
+    Return True
+  Else
+    Return False
+  End If
+End Function
+
+Function getMotionDetectorStableState(Index As Byte)
+  Mask = 1
+  Dec Index  
+  Mask = Mask Shl Index
+  Inc Index 'Wieder gerade ziehen
+  Mask = MotionDetectorStableStates And Mask
+  If (Mask > 0) Then Return True Else Return False           
+End Function
+
+Function updateMotionDetectors()
+  For MotionDetector_Index1 = 1 To 4
+    MotionDetectorStateChangeCounter = ^MotionDetectorStateChangeCounters + (MotionDetector_Index1 - 1)  
+    State = getMotionDetectorCurrentState(MotionDetector_Index1)
+    If (getMotionDetectorStableState(MotionDetector_Index1) = State) Then 'MD ist unverändert  
+      @MotionDetectorStateChangeCounter = 0 'Falls er Umschaltet, muss (wieder) bei 0 begonnen werden          
+    Else 'MD hat aktuell anderen Zustand als stabil: UMSCHALTEN 
+      {IF DEFINED DEBUG}
+        Print "Switch MD " & MotionDetector_Index1 & " to " & State
+        Print "Counter: " & @MotionDetectorStateChangeCounter
+      {ENDIF}
+      @MotionDetectorStateChangeCounter = @MotionDetectorStateChangeCounter + 1
+      If ((State) And (@MotionDetectorStateChangeCounter = MOTION_DETECTOR_STABLE_CHANGE_TO_ON_COUNT)) Or ((Not State) And (@MotionDetectorStateChangeCounter = MOTION_DETECTOR_STABLE_CHANGE_TO_OFF_COUNT)) Then 'Wir haben es geschafft!
+        __MotionDetector_setStableState(MotionDetector_Index1, State)
+        @MotionDetectorStateChangeCounter = 0                  
+      End If        
+    End If          
+  Next  
+End Function
+
+' *** Privat ***
+Function __MotionDetector_setStableState(Index As Byte, State As Bit)
+  {IF DEFINED DEBUG}
+    Print "__MotionDetector_setStableState(" & Index & ", " & State & "):"
+  {ENDIF}
+
+  Mask = 1
+  Dec Index
+  Mask = Mask Shl Index 'Maske für das betreffende Bit (0...010..0)
+  Inc Index 'Wieder gerade ziehen
+  {IF DEFINED DEBUG}
+    Print "Mask: " & Mask
+  {ENDIF}
+  If (State) Then 'Alarm auslösen!  
+    {IF DEFINED MOTION_DETECTOR_HISTORY}
+      WriteMotionDetectorHistoryEntry(Index)
+    {ENDIF}        
+    Mask = MotionDetectorStableStates Or Mask  
+  Else
+    Mask = not Mask 'Invertieren   
+    Mask = MotionDetectorStableStates And Mask    
+  End If      
+  MotionDetectorStableStates = Mask   
+  {IF DEFINED DEBUG}
+    Print "MotionDetectorStableStates: " & MotionDetectorStableStates
+  {ENDIF}
+End Function

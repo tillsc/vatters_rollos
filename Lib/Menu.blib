@@ -1,0 +1,39 @@
+
+Define Menu_Index1 As Byte
+Define Menu_Index2 As Byte
+Define Offset As Byte
+
+Function menuManualUpDown(Up As Bit)
+  Backlight = BACKLIGHT_ON
+  LCD.Init
+  LCD.Pos 1, 1
+  LCD.Print "Rolladen "
+  If (Up) Then
+    LCD.Print "hoch"
+    Offset = 0 ' Wird subtrahiert!
+  Else
+    LCD.Print "runter"
+    Offset = 1 ' Wird subtrahiert! (1: Runter, 2: Rauf...)
+  End If
+  LCD.Pos 2, 1
+  LCD.Print "1-6 oder 7: Alle?"
+  Do
+    Wait GET_KEY = 255 'Alle Tasten los gelassen
+    Menu_Index1 = GET_KEY
+    If (Menu_Index1 >= 1 And Menu_Index1 <= 6) Then
+      relaisImpulse(Menu_Index1 * 2 - Offset, Looktab(IMPULSE_LENGTH, Menu_Index1 - 1))
+      Exit Do
+    Else
+      If (Menu_Index1 = 7) Then
+        For Menu_Index1 = 1 To 6
+          relaisImpulse(Menu_Index1 * 2 - Offset, Looktab(IMPULSE_LENGTH, Menu_Index1 - 1))
+        Next
+        Exit Do
+      End If
+    End If
+  Loop Until Menu_Index1 = 10 'Abbruch
+  Wait GET_KEY = 255 'Alle Tasten los gelassen
+  LCD.Clear  
+  LCD.Off
+'  Backlight = BACKLIGHT_OFF
+End Function

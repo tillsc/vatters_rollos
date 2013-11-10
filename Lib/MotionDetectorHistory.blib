@@ -1,0 +1,89 @@
+{DEFINE MOTION_DETECTOR_HISTORY}
+
+' ********** Ringspeicher für Alarmzeiten **********
+Const ALARM_HISTORY_LENGTH = 10
+Define AlarmHistory(50) As Byte[155] '15 * 5
+Define AlarmHistoryNextIndex As Byte
+Define AlarmHistorySize As Byte
+AlarmHistoryNextIndex = 0
+AlarmHistorySize = 0
+' *** Pointer ***
+Define ^AlarmHistoryMotionDetectorIndex As Byte 'Byte 1: Index des Bewegungsmelders
+Define ^AlarmHistoryMonth As Byte 'Byte 2: Monat
+Define ^AlarmHistoryDay As Byte 'Byte 3: Tag
+Define ^AlarmHistoryHour As Byte 'Byte 4: Stunde
+Define ^AlarmHistoryMinute As Byte 'Byte 5: Minute
+
+Function WriteMotionDetectorHistoryEntry(Index As Byte)
+  {IF DEFINED DEBUG}
+    Print "__MotionDetector_WriteLogEntry(" & Index & ")"
+  {ENDIF}
+  AlarmHistoryMotionDetectorIndex = ^AlarmHistory + (AlarmHistoryNextIndex * 5)
+  AlarmHistoryMonth = AlarmHistoryMotionDetectorIndex + 1
+  AlarmHistoryDay = AlarmHistoryMonth + 1
+  AlarmHistoryHour = AlarmHistoryDay + 1
+  AlarmHistoryMinute = AlarmHistoryHour + 1
+  @AlarmHistoryMotionDetectorIndex = Index
+  @AlarmHistoryMonth = Month
+  @AlarmHistoryDay = Day
+  @AlarmHistoryHour = Hour
+  @AlarmHistoryMinute = Minute
+  Inc AlarmHistoryNextIndex
+  AlarmHistoryNextIndex = AlarmHistoryNextIndex mod ALARM_HISTORY_LENGTH
+  If (AlarmHistorySize < ALARM_HISTORY_LENGTH) Then Inc AlarmHistorySize
+  {IF DEFINED DEBUG}
+    Print "AlarmHistoryNextIndex: " & AlarmHistoryNextIndex
+    Print "AlarmHistorySize: " & AlarmHistorySize
+  {ENDIF}
+End Function
+
+Function menuShowMotionDetectorHistory()
+  {IF DEFINED DEBUG}
+    Print "menuShowMotionDetectorHistory()"
+  {ENDIF}
+  Backlight = BACKLIGHT_ON
+  LCD.Init
+  LCD.Clear
+  LCD.Pos 1, 1
+  LCD.Print "Alarm-Historie"
+  If (AlarmHistorySize > 0) Then
+    For Menu_Index1 = 1 To AlarmHistorySize
+      If (Menu_Index1 <= AlarmHistoryNextIndex) Then
+         Menu_Index2 = AlarmHistoryNextIndex - Menu_Index1
+      Else
+         Menu_Index2 = AlarmHistoryNextIndex + ALARM_HISTORY_LENGTH - Menu_Index1
+      End If
+      AlarmHistoryMotionDetectorIndex = ^AlarmHistory + (Menu_Index2 * 5)
+      AlarmHistoryMonth = AlarmHistoryMotionDetectorIndex + 1
+      AlarmHistoryDay = AlarmHistoryMonth + 1
+      AlarmHistoryHour = AlarmHistoryDay + 1
+      AlarmHistoryMinute = AlarmHistoryHour + 1
+      LCD.Pos 2, 1
+      LCD.Print "MD"
+      LCD.Print (@AlarmHistoryMotionDetectorIndex)
+      LCD.Print ": "
+      LCD.Print (@AlarmHistoryDay)
+      LCD.Print "."
+      If (@AlarmHistoryMonth < 10) Then LCD.Print "0"
+      LCD.Print @AlarmHistoryMonth
+      LCD.Print " "
+      LCD.Print (@AlarmHistoryHour)
+      LCD.Print ":"
+      If (@AlarmHistoryMinute < 10) Then LCD.Print "0"
+      LCD.Print (@AlarmHistoryMinute)
+      LCD.Print "   "
+      Wait GET_KEY = 255 'Alle Tasten los gelassen
+      Wait GET_KEY <> 255 ' Irgend eine Taste
+      If (GET_KEY = 10) Then Exit For 'Clr
+    Next
+  Else
+    LCD.Pos 2, 1
+    LCD.Print "<Leer>"
+    Wait GET_KEY = 255 'Alle Tasten los gelassen
+    Wait GET_KEY <> 255 ' Irgend eine Taste
+  End If
+  Wait GET_KEY = 255 'Alle Tasten los gelassen
+  LCD.Clear
+  LCD.Off
+  Backlight = BACKLIGHT_OFF
+End Function

@@ -1,0 +1,55 @@
+' Gibt die aktuelle Uhrzeit aus
+Function ShowTime(WithSeconds As Bit, BlinkColon As Bit)
+  If (HOUR < 10) Then LCD.Print "0" 'Führende 0
+  LCD.Print HOUR
+  If (BlinkColon And SECOND Mod 2 = 0) Then
+     LCD.Print " "
+  Else
+     LCD.Print ":"
+  End If
+  If (MINUTE < 10) Then LCD.Print "0" 'Führende 0
+  LCD.Print MINUTE
+
+  If (WithSeconds) Then 
+    If (BlinkColon And SECOND Mod 2 = 0) Then
+       LCD.Print " "
+    Else
+       LCD.Print ":"
+    End If
+
+    If (SECOND < 10) Then LCD.Print "0" 'Führende 0
+    LCD.Print SECOND
+  End If 'WithSeconds    
+End Function
+
+Function ShowDowString()
+  Select Case DOW
+    Case BPPMonday
+    LCD.Print "Mo"
+    Case BPPTuesday
+    LCD.Print "Di"
+    Case BPPWednesday
+    LCD.Print "Mi"
+    Case BPPThursday
+    LCD.Print "Do"
+    Case BPPFriday
+    LCD.Print "Fr"
+    Case BPPSaturday
+    LCD.Print "Sa"
+    Case BPPSunday
+    LCD.Print "So"
+  End Select
+End Function 'ShowDowString
+
+Function ShowDate(WithLongYear As Bit)
+  If (DAY < 10) Then LCD.Print "0" 'Führende 0
+  LCD.Print DAY
+  LCD.Print "."
+  If (Month < 10) Then LCD.Print "0" 'Führende 0
+  LCD.Print MONTH
+  LCD.Print "."
+  If (WithLongYear) Then LCD.Print "20"
+  If (YEAR < 10) Then LCD.Print "0" 'Führende 0
+  LCD.Print YEAR
+End Function 'ShowDate
+

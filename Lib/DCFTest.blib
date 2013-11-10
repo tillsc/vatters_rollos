@@ -1,0 +1,33 @@
+' Test des DCF-Empfangs. 
+  define loop byte
+  define bar_graph_length byte
+  define signal_monitor word
+
+Function DCFTest()
+  LCD.Init 
+  LCD.Print "   DCF Signal   " 
+  signal_monitor = 0 
+  #dcftest_start 
+  if freq = 1 then goto dcftest_signal_received 
+  signal_monitor = signal_monitor - 2 
+  if signal_monitor < 0 then signal_monitor = 0 
+  #dcftest_display_bar_graph 
+  bar_graph_length = signal_monitor / 100 
+  lcd.pos 2,1 
+  for loop = 0 to bar_graph_length 
+    if loop > 0 then put &hff 
+  next 
+  lcd.print "                "; 
+  if bar_graph_length = 16 then beep 4,2,4
+  If GET_KEY() = 11 Then 
+    LCD.Clear  
+    LCD.Off
+    Return True
+  End If    
+  goto dcftest_start 
+
+  #dcftest_signal_received 
+  signal_monitor = signal_monitor + 1 
+  if signal_monitor > 1600 then signal_monitor = 1600 
+  goto dcftest_display_bar_graph
+End Function  

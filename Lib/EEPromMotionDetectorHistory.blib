@@ -1,0 +1,104 @@
+{DEFINE MOTION_DETECTOR_HISTORY}
+
+Define EEProm_Index As Word
+Define EEProm_Word1 As Word
+Define EEProm_Word2 As Word
+
+Define EEPromHistoryEntryCount As Word
+EEPromHistoryEntryCount = 0
+
+Function WriteMotionDetectorHistoryEntry(Index As Byte)
+  {IF DEFINED DEBUG}
+    Print "WriteMotionDetectorHistoryEntry(" & Index & ")"
+    Print "Filefree: " & filefree
+    Print "EEPromHistoryEntryCount: " &  EEPromHistoryEntryCount
+  {ENDIF}
+  If (filefree >= 3) And (EEPromHistoryEntryCount > 0) Then 'Letzeres für Sicheren Rewrite nach Neustart
+    Open# For Append
+  Else       
+    Open# For Write ' Von vorne beginnen
+    EEPromHistoryEntryCount = 0    
+  End If
+  EEProm_Word1 = Index
+  EEProm_Word1 = EEProm_Word1 Shl 8
+  EEProm_Word1 = EEProm_Word1 Or Day     
+  Print# EEProm_Word1  
+  EEProm_Word1 = Month
+  EEProm_Word1 = EEProm_Word1 Shl 8
+  EEProm_Word1 = EEProm_Word1 Or Year
+  Print# EEProm_Word1
+  EEProm_Word1 = Hour
+  EEProm_Word1 = EEProm_Word1 Shl 8
+  EEProm_Word1 = EEProm_Word1 Or Minute
+  Print# EEProm_Word1
+
+  Inc EEPromHistoryEntryCount  
+  Close#       
+  {IF DEFINED DEBUG}
+    Print "Wrote 3 Words"
+  {ENDIF}
+End Function
+
+Function menuShowMotionDetectorHistory()
+  {IF DEFINED DEBUG}
+    Print "menuShowMotionDetectorHistory()"
+  {ENDIF}
+  Backlight = BACKLIGHT_ON
+  LCD.Init
+  LCD.Clear
+  LCD.Pos 1, 1
+  LCD.Print "Alarme ("& EEPromHistoryEntryCount &")"
+  If (EEPromHistoryEntryCount > 0) Then
+    EEProm_Index = EEPromHistoryEntryCount' Hinten anfangen
+    Do
+      LCD.Pos 2, 1
+      Open# For Read
+      If (EEProm_Index > 1) Then  '** Seek **             
+        For EEProm_Word1 = 1 To EEProm_Index - 1 
+          Input# EEProm_Word2
+          Input# EEProm_Word2
+          Input# EEProm_Word2                      
+        Next
+      End If
+              
+      '' Lesen      
+      Input# EEProm_Word1 'Index, Tag
+      EEProm_Word2 = EEProm_Word1 And 00FFh 'Tag
+      EEProm_Word1 = EEProm_Word1 Shr 8 'Index
+      LCD.Print  EEProm_Word1 & " "                   
+      If (EEProm_Word2 < 10) Then LCD.Print "0" 'Führende 0
+      LCD.Print EEProm_Word2 & "."        
+
+      Input# EEProm_Word1 'Monat, Jahr
+      EEProm_Word2 = EEProm_Word1 And 00FFh 'Jahr
+      EEProm_Word1 = EEProm_Word1 Shr 8 'Monat
+      If (EEProm_Word1 < 10) Then LCD.Print "0" 'Führende 0            
+      LCD.Print EEProm_Word1 & "."
+      If (EEProm_Word2 < 10) Then LCD.Print "0" 'Führende 0
+      LCD.Print EEProm_Word2 & " "
+
+      Input# EEProm_Word1 'Stunde, Minute
+      EEProm_Word2 = EEProm_Word1 And 00FFh 'Minute
+      EEProm_Word1 = EEProm_Word1 Shr 8 'Stunde
+      If (EEProm_Word1 < 10) Then LCD.Print "0" 'Führende 0
+      LCD.Print EEProm_Word1 & ":"
+      If (EEProm_Word2 < 10) Then LCD.Print "0" 'Führende 0
+      LCD.Print EEProm_Word2
+
+      Close#
+      Dec EEProm_Index 'Nächster Datensatz                  
+
+      Wait GET_KEY = 255 'Alle Tasten los gelassen
+      Wait GET_KEY <> 255 ' Irgend eine Taste
+    Loop Until (GET_KEY = 10) Or (EEProm_Index <= 0)         
+  Else
+    LCD.Pos 2, 1
+    LCD.Print "<Leer>"
+    Wait GET_KEY = 255 'Alle Tasten los gelassen
+    Wait GET_KEY <> 255 ' Irgend eine Taste
+  End If            
+  Wait GET_KEY = 255 'Alle Tasten los gelassen
+  LCD.Clear
+  LCD.Off
+  Backlight = BACKLIGHT_OFF
+End Function

@@ -1,0 +1,79 @@
+Define WordVar As Word
+Define FloatVar As Float
+
+' Berechnet einen zum Sonnenstand passenden Sinus mit angegebener Amplitude
+Function calculateSunSin(Amplitude As Word, ForTomorrow As Bit)
+  Const DAY_26_06 = 181 '26 + 5 * 31
+  Const DAY_COUNT = 372 '31 * 12
+  
+  WordVar = Day + ((Month - 1) * 31)  
+  If (ForTomorrow) Then WordVar = WordVar + 1
+  If (WordVar > (11 * 31) + 26) Then '26.12 - 31.12 brauchen Sonderbehandlung
+    WordVar = WordVar - DAY_COUNT  
+  End If
+  WordVar = WordVar - DAY_26_06 'Geht jetzt von -DAY_COUNT/2 bis +DAY_COUNT/2   
+                
+  FloatVar = Float(WordVar) * 0.01735686548945 ' = Pi / (DAY_COUNT/2)     
+'  FloatVar = __TimeTableCalcCos(FloatVar) ' Return Float gibt Compiler-Warnung
+  __TimeTableCalcCos(FloatVar)
+  FloatVar = FloatVar * Float(Amplitude)  
+  WordVar = Int(FloatVar)  
+  Return WordVar 'Geht nicht einzeilig (Bug?)
+End Function
+
+Function isSummerTime(Tomorrow As Bit)
+  Dim CalcDay As Byte
+  If (Month < 3) Or (Month > 10) Then Return False
+  CalcDay = Dow mod 7
+  CalcDay = Day - CalcDay
+  If (Tomorrow) Then Inc CalcDay       
+  If (Month = 3) And (CalcDay < 25) Then Return False
+  If (Month = 10) And (CalcDay > 24) Then Return False
+  Return True
+End Function
+
+Function __TimeTableCalcCos(F Ref FloatVar)
+  If (F > Pi/2) Then    ' Cos-Funktion geht nur von-Pi/2 bis +Pi/2
+    F = Pi - F
+    F = -1.0 * Cos(F, BPPRadians)  
+  Else
+      IF (F < (-1.0 * Pi/2)) Then  
+         F = F + Pi
+         F = -1.0 * Cos(F, BPPRadians)
+       Else
+         F = Cos(F, BPPRadians)
+       End If                                        
+  End If 
+End Function  
+
+Function getRandValue(GroupIndex As Byte)
+  'Warum so umständlich: 32768 / Offset muss zuerst, um ganzzahlig rechnen zu können
+  If (LookTab(RANDOM_OFFSET, GroupIndex - 1) > 0) Then 'Zufallswert
+    Return Rand / (32768 / LookTab(RANDOM_OFFSET, GroupIndex - 1))
+  Else
+    Return 0
+  End If          
+End Function
+
+Function calculateNextDownTime(GroupIndex As Byte, ForTomorrow As Bit)
+  Dim Res As Word
+  If (isSummertime(ForTomorrow)) Then
+    Res = LookTab(DOWN_TIME_SUMMER, GroupIndex - 1)
+  Else      
+    Res = LookTab(DOWN_TIME, GroupIndex - 1)
+  End If    
+' eigentlich sollte SunSin addiert werden, stimmt aber mit -
+  Res = Res + getRandValue(GroupIndex) - calculateSunSin(LookTab(DOWN_TIME_SIN_AMPLITUDE, GroupIndex - 1), ForTomorrow)
+  Return Res  
+End Function
+
+Function calculateNextUpTime(GroupIndex As Byte, ForTomorrow As Bit)
+  Dim Res As Word
+  If (isSummertime(ForTomorrow)) Then
+    Res = LookTab(UP_TIME_SUMMER, GroupIndex - 1)
+  Else
+    Res = LookTab(UP_TIME, GroupIndex - 1)
+  End If    ' eigentlich sollte SunSin subtrahiert werden, stimmt aber mit +
+  Res = Res + getRandValue(GroupIndex) + calculateSunSin(LookTab(UP_TIME_SIN_AMPLITUDE, GroupIndex - 1), ForTomorrow)
+  Return Res  
+End Function

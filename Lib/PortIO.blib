@@ -1,0 +1,171 @@
+' Steuerungsbiblitotek für die 4 Internen Relais (Index 1 - 4) + LEDs und 8
+' weitere externe Relais (Index 5 - 12).
+' ACHTUNG: Falls "relaisImpulse" verwendet wird, wird der Timer exklusiv benötigt!
+' D.h. Der Aufruf setzt den Timer auf 0!
+' TODO: Das könnte z.B. durch einen Offset evtl besser gemacht werden!
+                                                                                  
+' ********** Ports **********
+' Der IIC-Bus
+Define PortIO_SDA As Port[9]
+Define PortIO_SCL As Port[10]
+
+' Die Internen Relais sind vollständig über ein Byte ansprechbar (Inklusive LEDs)
+Define PortIO_InternalRelaisPort As Byteport[4]
+Const PortIO_InternalRelais1Mask = 10001000b 'LED und Relais immer gleichzeitig Schlaten
+Const PortIO_InternalRelais2Mask = 01000100b
+Const PortIO_InternalRelais3Mask = 00100010b
+Const PortIO_InternalRelais4Mask = 00010001b
+
+' Externe Relais müssen einzeln definierbar sein 
+Define PortIO_ExternalRelais1Port As Port[32]
+Define PortIO_ExternalRelais2Port As Port[33]
+
+Define PortIO_ExternalRelais3Port As Port[34]
+Define PortIO_ExternalRelais4Port As Port[35]
+
+Define PortIO_ExternalRelais5Port As Bit' (Deaktiviert) Port[36]
+Define PortIO_ExternalRelais6Port As Bit' Port[37]
+
+Define PortIO_ExternalRelais7Port As Bit' Port[0]
+Define PortIO_ExternalRelais8Port As Bit' Port[0]
+
+' ********** Interne Datenstrukturen **********
+Define PortIO_InternalRelaisPortState As Byte 'Zustand der Internen Relais und LEDs
+
+Define PortIO_ExternalRelaisState As Byte 'Zustand der externen Relais
+Define PortIO_ExternalRelais1State Ref PortIO_ExternalRelaisState At Bit[1] 
+Define PortIO_ExternalRelais2State Ref PortIO_ExternalRelaisState At Bit[2]
+Define PortIO_ExternalRelais3State Ref PortIO_ExternalRelaisState At Bit[3]
+Define PortIO_ExternalRelais4State Ref PortIO_ExternalRelaisState At Bit[4]
+Define PortIO_ExternalRelais5State Ref PortIO_ExternalRelaisState At Bit[5]
+Define PortIO_ExternalRelais6State Ref PortIO_ExternalRelaisState At Bit[6]
+Define PortIO_ExternalRelais7State Ref PortIO_ExternalRelaisState At Bit[7]
+Define PortIO_ExternalRelais8State Ref PortIO_ExternalRelaisState At Bit[8]
+
+Define PortIO_TurnOffTimes As String * 25 '(12 * 2 + 1 byte)
+
+' *** Variablen zur allgemeinen Verwendung
+Define PortIO_Index1 As Byte
+Define ^PortIO_TimerValue As Word 'Pointer auf die TurnOffTimes
+Define PortIO_CurTime As Word
+Define PortIO_OldTimerValue As Word
+
+' ********** Funktionen **********
+Function initRelaisIO()
+  PortIO_SDA=on 'IIC-Bus Inititalisieren
+  PortIO_SCL=on
+  PortIO_InternalRelaisPortState = Off
+  PortIO_ExternalRelaisState = Off
+  __PortIO_UpdateRelais()
+  For PortIO_Index1 = 0 To 12 'Timer=0 Aktion durchrechnen
+    PortIO_TimerValue = ^PortIO_TurnOffTimes + PortIO_Index1 * 2
+    @PortIO_TimerValue = 0    
+  Next    
+End Function
+
+Function updateRelaisIO()
+  PortIO_CurTime = Timer
+  For PortIO_Index1 = 0 To 12 
+    PortIO_TimerValue = ^PortIO_TurnOffTimes + PortIO_Index1 * 2
+    If (@PortIO_TimerValue > 0 and PortIO_TimerValue < PortIO_CurTime) Then 'Wichtig: Der Timer darf nicht überlaufen! (Wird beim Setzen zurück gestellt)
+      setRelaisState(PortIO_Index1, Off)
+      @PortIO_TimerValue = 0 'Wir sind fertig          
+    End If      
+  Next    
+End Function
+
+Function setRelaisState(Index as Byte, State as Bit)
+  Select Case Index
+    Case 1
+      PortIO_InternalRelaisPortState = (PortIO_InternalRelaisPortState And Not PortIO_InternalRelais1Mask) Or (State And PortIO_InternalRelais1Mask)
+    Case 2
+      PortIO_InternalRelaisPortState = (PortIO_InternalRelaisPortState And Not PortIO_InternalRelais2Mask) Or (State And PortIO_InternalRelais2Mask)
+    Case 3
+      PortIO_InternalRelaisPortState = (PortIO_InternalRelaisPortState And Not PortIO_InternalRelais3Mask) Or (State And PortIO_InternalRelais3Mask)
+    Case 4
+      PortIO_InternalRelaisPortState = (PortIO_InternalRelaisPortState And Not PortIO_InternalRelais4Mask) Or (State And PortIO_InternalRelais4Mask)
+    Case 5
+      PortIO_ExternalRelais1State = State    
+    Case 6
+      PortIO_ExternalRelais2State = State
+    Case 7
+      PortIO_ExternalRelais3State = State
+    Case 8
+      PortIO_ExternalRelais4State = State      
+    Case 9
+      PortIO_ExternalRelais5State = State
+    Case 10
+      PortIO_ExternalRelais6State = State
+    Case 11
+      PortIO_ExternalRelais7State = State
+    Case 12
+      PortIO_ExternalRelais8State = State
+  End Select
+  If (State) Then 'Das dazugehörige Relais ausschalten! 1 <-> 2, 3 <-> 4, ...     
+    setRelaisState(Index + ((Index mod 2) * 2) - 1, Off) 'Nach Rücksprung ist nichts mehr zu tun!
+  Else 'update wird in der Rekursion aufgerufen    
+    __PortIO_UpdateRelais()
+  End If        
+End Function
+
+Function getRelaisState(Index as Byte)
+  Select Case Index
+    Case 1
+      Return (PortIO_InternalRelaisPortState And PortIO_InternalRelais1Mask) <> 0
+    Case 2
+      Return (PortIO_InternalRelaisPortState And PortIO_InternalRelais2Mask) <> 0
+    Case 3
+      Return (PortIO_InternalRelaisPortState And PortIO_InternalRelais3Mask) <> 0
+    Case 4
+      Return (PortIO_InternalRelaisPortState And PortIO_InternalRelais4Mask) <> 0
+    Case 5
+      Return PortIO_ExternalRelais1State
+    Case 6
+      Return PortIO_ExternalRelais2State
+    Case 7
+      Return PortIO_ExternalRelais3State
+    Case 8
+      Return PortIO_ExternalRelais4State
+    Case 9
+      Return PortIO_ExternalRelais5State
+    Case 10
+      Return PortIO_ExternalRelais6State
+    Case 11
+      Return PortIO_ExternalRelais7State
+    Case 12
+      Return PortIO_ExternalRelais8State
+  End Select
+  Return Off  
+End Function
+
+' Schaltet ein Relais für Length Sekunden.
+' Wichtig: updateRelaisIO muss zum ausschalten regelmäßig aufgerufen werden! 
+Function relaisImpulse(Index As Byte, Length As Byte) 
+  PortIO_OldTimerValue = Timer
+  Timer = 0 'TODO: Das muss schöner!
+    
+  setRelaisState(Index, On)
+  
+  For PortIO_Index1 = 0 To 12 'Timer=0 Aktion durchrechnen 
+    PortIO_TimerValue = ^PortIO_TurnOffTimes + PortIO_Index1 * 2
+    If (@PortIO_TimerValue > 0) Then
+      @PortIO_TimerValue = Max(1, @PortIO_TimerValue - PortIO_OldTimerValue) 
+    End If
+  Next
+  PortIO_TimerValue = ^PortIO_TurnOffTimes + Index * 2
+  @PortIO_TimerValue = Length * 50  
+End Function
+
+' ********** Interne Funktionen **********
+Function __PortIO_UpdateRelais() 'Privat!
+  PortIO_InternalRelaisPort = PortIO_InternalRelaisPortState
+  PortIO_ExternalRelais1Port = PortIO_ExternalRelais1State
+  PortIO_ExternalRelais2Port = PortIO_ExternalRelais2State
+  PortIO_ExternalRelais3Port = PortIO_ExternalRelais3State
+  PortIO_ExternalRelais4Port = PortIO_ExternalRelais4State
+  PortIO_ExternalRelais5Port = PortIO_ExternalRelais5State
+  PortIO_ExternalRelais6Port = PortIO_ExternalRelais6State
+  PortIO_ExternalRelais7Port = PortIO_ExternalRelais7State
+  PortIO_ExternalRelais8Port = PortIO_ExternalRelais8State
+End Function
+

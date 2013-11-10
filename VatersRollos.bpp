@@ -1,0 +1,217 @@
+'//////////////////////////////////////
+'  Beschreibung:
+'//////////////////////////////////////
+ 
+Option CCADV 
+Option Array
+
+{DEFINE DEBUG_OFF} 'DEBUG für Debug-Ausgaben auf den seriellen Port
+
+' ******** Konstanten ********
+' *** Allgemein ***
+Const USE_DCF_MODULE = On
+
+Const BACKLIGHT_ON = Off 'Workaround für Licht an <-> Port[16] = Off
+' Const BACKLIGHT_OFF = On 'Off für Entwicklung/Tests 
+
+' ******** Ports ********
+Define Backlight As Port[16]
+
+' ******** Variablen ********
+Define Index1 As Byte
+Define SummerTime As Bit
+
+' ******** Imports ********
+Import "GET_KEY.blib"
+'Import "SET_SYSTEM_RTC.BLIB"
+Import "DCF_SYNC.blib"
+
+' *** Eigene Libs ***
+'Import "Lib\MotionDetectorHistory.blib"
+'Import "Lib\EEPromMotionDetectorHistory.blib"
+'Import "Lib\MotionDetector.blib"
+Import "Lib\Rollos.blib"
+Import "Lib\Menu.blib"
+Import "Lib\RelaisIO.blib"
+Import "Lib\DateTime.blib"
+Import "Lib\TimeTable.blib"
+Import "Lib\DCFTest.blib"
+
+' ******** Inititalisierung ********
+Backlight = BACKLIGHT_ON
+LCD.Init
+LCD.Pos 1, 1
+LCD.Print "Rollosteuerung"
+LCD.Pos 2, 1
+LCD.Print "Version 1.2"
+
+Randomize Timer
+
+' *** Uhr ***
+Pause 50 * 3 ' 3 Sekunden warten für die Anzeige
+SetDate 9, 1, 16, Bppfriday
+SetTime 19, 29, 45  
+
+If (USE_DCF_MODULE) Then
+  Do
+    LCD.Init switchonly 
+    LCD.Pos 1, 1
+    LCD.Print "Warte auf DCF        "
+    LCD.Pos 2, 1
+    LCD.Print "F1 f" & Chr(F5h) & "r Test         "
+    LCD.Off
+    If (GET_KEY() = 12) Then DCFTest() 'F1
+    If (GET_KEY() = 10) Then Exit Do 'Clr
+  Loop Until DCF_SYNC() 
+Else
+'  SET_DATE()
+'  SET_TIME()
+'  SET_DAY()
+End If
+
+' *** TimeTable (Muss leider nach Uhr sein) ****
+initRolloTimeTable()
+
+LCD.Clear
+' Backlight = BACKLIGHT_OFF
+RelaisImpulse(14, 10) 'Hintergrundlicht für 10sec an lassen
+
+'' ******** Hauptprogramm ********
+Do
+' *** Display Setzen
+  LCD.Init Switchonly
+  LCD.Pos 1, 1 'Zeile 1: Datum + Zeit
+  ShowDowString()
+  ShowDate(False)
+  LCD.Print " "
+  ShowTime(False, True)
+
+  LCD.Pos 2, 1 'Zeile 2: Zustand des Systems
+  For Index1 = 0 To 5
+    If getRelaisState(Index1 * 2 + 1) Then
+      LCD.Print "v"
+    Else
+      If getRelaisState(Index1 * 2 + 2) Then
+        LCD.Print "^"
+      Else
+        If (not getRolloAutomaticState(Index1 + 1)) Then
+          LCD.Print "X"
+        Else          
+          LCD.Print "-"
+        End IF
+      End If
+    End If
+  Next
+  {IF DEFINED MOTION_DETECTOR}  
+    LCD.Print " "
+    For Index1 = 1 To 4
+      If getMotionDetectorStableState(Index1) Then ' Port ist entprellt On
+        If getMotionDetectorCurrentState(Index1) Then LCD.Print "On" Else LCD.Print "on" 'Unentprellte Unterscheidung
+      Else ' Port ist entprellt Off         
+        If getMotionDetectorCurrentState(Index1) Then LCD.Print "of" Else LCD.Print "Of" 'Unentprellte Unterscheidung
+      End If      
+    Next
+  {ENDIF}    
+  LCD.Off  
+
+  updateRelaisIO()
+  updateRollos()  
+  {IF DEFINED MOTION_DETECTOR}
+    updateMotionDetectors()
+  {ENDIF}    
+
+  ' *** Tastatur Abfragen
+  Index1 = 1  
+  Select Case GET_KEY()
+    Case 0
+    Case 1
+      menuManualUpDown(False)
+    Case 2
+      menuManualUpDown(True)
+    Case 3
+      menuShowUpDownTimes()    
+    Case 4
+      menuSetRolloAutomatic()    
+    Case 5
+    Case 6
+    Case 7
+      DCFTest()
+    Case 8
+    Case 9
+      {IF DEFINED MOTION_DETECTOR_HISTORY}
+        menuShowMotionDetectorHistory()
+      {ENDIF}
+    Case 10 'Clr
+    Case 11 'Enter
+    Case 12 'F1
+    Case 13 'F2
+    Case Else 'Idle
+      Index1 = 0 'Nix ist passiert    
+  End Select
+  If (Index1 = 1) Then RelaisImpulse(14, 10) 'Hintergrundlicht für 10sec an lassen  
+  
+    ' *** Ende
+Loop Until False
+
+' ******** Tabellen ********
+' *** Rolladen-Parameter ***
+' 1: Küche (21 Sec)  Intern 1+2
+' 2: Flur: (18 Sec)  Intern 3+4
+' 3: Wohnzimmer (21 Sec) Extern 1+2 (Port 2 Defekt => Rauf liegt mit auf Port 8 [Terasse])
+' 4: Klo (18 Sec) Extern 3+4
+' 5: Arbeitszimmer (22 Sec) Extern 5+6
+' 6: Terasse (24) Extern 7+8
+' Wichtige Daten (In Winterzeit!) zu Bonn:
+' Sonnenaufgang 21.3: 6:30 (Ab 5:30 Dämmerung)
+' Sonnenuntergang 21.3: 18:45 (Bis 19:45 Dämmerung)
+' Unterschied Sonnenaufgang 21.06 - 21.12: 4:10h; Schwankung ist also ca. +-125 Min
+
+Table IMPULSE_LENGTH ' Schaltdauer in Sekunden (Bitte beim Hochfahren messen)
+  21 18 21 18 22 24
+End Table
+
+Table RANDOM_OFFSET ' Hoch- und Runterfahren mit +- Random-Offset Minuten
+  5 5 5 5 5 5
+End Table
+
+' *** Runterfahren Zeitbeispiele***
+' 1110<> 18:30
+' 1140<> 19:00
+' 1170<> 19:30
+' 1200<> 20:00
+Table DOWN_TIME ' Absolutzeit in Minuten nach Mitternacht (19:00=> 1140) zum Runterfahren (exakt am 26.3 und 26.9)
+  1130 1120 1120 1110 1110 1130
+End Table
+
+Table DOWN_TIME_SUMMER ' Absolutzeit in Minuten nach Mitternacht (20:00=> 1200) zum Runterfahren (exakt am 26.3 und 26.9) in Sommerzeit
+  1190 1180 1180 1170 1170 1190 
+End Table
+
+Table DOWN_TIME_SIN_AMPLITUDE ' Jahresabhängige Schwankung in Minuten (Real etwa 125 Min)
+  125 125 125 125 125 125
+End Table
+
+Table DOWN_OFFSET_HOLYDAY ' Zusätzliche !Verfrühung! des Runterfahrens im Ferienmodus
+  20 10 10 20 20 50
+End Table
+
+' *** Hochfahren Zeitbeispiele***
+' 420<> 7:00 
+' 450<> 7:30 
+' 480<> 8:00 
+' 510<> 8:30 
+Table UP_TIME ' Absolutzeit in Minuten nach Mitternacht (7:30 => 450) zum Hochfahren
+  430 460 460 480 460 430
+End Table
+
+Table UP_TIME_SUMMER ' Absolutzeit in Minuten nach Mitternacht (7:30 => 450) zum Hochfahren in Sommerzeit
+  420 450 450 460 450 420
+End Table
+
+Table UP_TIME_SIN_AMPLITUDE ' Jahresabhängige Schwankung in Minuten
+  30 30 30 30 30 30
+End Table
+
+Table UP_OFFSET_HOLYDAY ' Zusätzliche Verspätung des Hochfahrens im Ferienmodus
+  30 30 30 30 30 30
+End Table
