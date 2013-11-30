@@ -85,5 +85,5 @@ Function menuShowMotionDetectorHistory()
   Wait GET_KEY = 255 'Alle Tasten los gelassen
   LCD.Clear
   LCD.Off
-  Backlight = BACKLIGHT_OFF
+  RelaisImpulse(14, 10) 'Hintergrundlicht für 10sec an lassen
 End Function

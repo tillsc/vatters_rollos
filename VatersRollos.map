@@ -2,36 +2,36 @@ Funktionen und Sprungmarken:
 
 Name                      Offset  Typ          Verwendet  Größe
 ----                      ------  ---          ---------  -----
-redo                      15      Label        x
-exit                      375     Label        x
-exit2                     400     Label        x
-dcftest_start             3987    Label        x
-dcftest_display_bar_graph 4027    Label        x
-dcftest_signal_received   4163    Label        x
-get_key                   10      Funktion     x          396
-dcf_sync                  409     Funktion     x          66
-initrollotimetable        483     Funktion     x          203
-updaterollos              689     Funktion     x          255
-getrolloautomaticstate    947     Funktion     x          52
-setrolloautomaticstate    1002    Funktion     x          52
-menushowupdowntimes       1057    Funktion     x          353
-menusetrolloautomatic     1413    Funktion     x          428
-menumanualupdown          1844    Funktion     x          274
-updaterelaisio            2186    Funktion     x          78
-setrelaisstate            2267    Funktion     x          260
-getrelaisstate            2530    Funktion     x          242
-relaisimpulse             2775    Funktion     x          134
-__relaisio_updaterelais   2912    Funktion     x          74
-showtime                  2989    Funktion     x          110
-showdowstring             3102    Funktion     x          110
-showdate                  3215    Funktion     x          73
-calculatesunsin           3291    Funktion     x          119
-issummertime              3413    Funktion     x          107
-__timetablecalccos        3523    Funktion     x          179
-getrandvalue              3705    Funktion     x          52
-calculatenextdowntime     3760    Funktion     x          90
-calculatenextuptime       3853    Funktion     x          90
-dcftest                   3946    Funktion     x          246
+redo                      20      Label        x
+exit                      380     Label        x
+exit2                     405     Label        x
+dcftest_start             3992    Label        x
+dcftest_display_bar_graph 4032    Label        x
+dcftest_signal_received   4168    Label        x
+get_key                   15      Funktion     x          396
+dcf_sync                  414     Funktion     x          66
+initrollotimetable        488     Funktion     x          203
+updaterollos              694     Funktion     x          255
+getrolloautomaticstate    952     Funktion     x          52
+setrolloautomaticstate    1007    Funktion     x          52
+menushowupdowntimes       1062    Funktion     x          353
+menusetrolloautomatic     1418    Funktion     x          428
+menumanualupdown          1849    Funktion     x          274
+updaterelaisio            2191    Funktion     x          78
+setrelaisstate            2272    Funktion     x          260
+getrelaisstate            2535    Funktion     x          242
+relaisimpulse             2780    Funktion     x          134
+__relaisio_updaterelais   2917    Funktion     x          74
+showtime                  2994    Funktion     x          110
+showdowstring             3107    Funktion     x          110
+showdate                  3220    Funktion     x          73
+calculatesunsin           3296    Funktion     x          119
+issummertime              3418    Funktion     x          107
+__timetablecalccos        3528    Funktion     x          179
+getrandvalue              3710    Funktion     x          52
+calculatenextdowntime     3765    Funktion     x          90
+calculatenextuptime       3858    Funktion     x          90
+dcftest                   3951    Funktion     x          246
 
 Variablen:
 
@@ -56,8 +56,8 @@ V2                  15     (14)       Byte         x
 V3                  16     (15)       Byte         x
 _sx3p               -                 Byte         -
 backlight           16     (15)       Port         x
+dcfpower            1      (0)        DA           x
 index1              22     (21)       Byte         x
-summertime          -                 BIT          -
 _get_key_adc8       8      (7)        AD           x
 _get_key_keycode    43     (42)       Byte         x
 _get_key_buffer     44     (43)       Byte         x

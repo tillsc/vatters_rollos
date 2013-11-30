@@ -16,10 +16,11 @@ Const BACKLIGHT_ON = Off 'Workaround für Licht an <-> Port[16] = Off
 
 ' ******** Ports ********
 Define Backlight As Port[16]
+Define DCFPower As DA[1]
+DCFPower = 0
 
 ' ******** Variablen ********
 Define Index1 As Byte
-Define SummerTime As Bit
 
 ' ******** Imports ********
 Import "GET_KEY.blib"
@@ -53,6 +54,7 @@ SetDate 9, 1, 16, Bppfriday
 SetTime 19, 29, 45  
 
 If (USE_DCF_MODULE) Then
+  DCFPower = 255 ' 5V
   Do
     LCD.Init switchonly 
     LCD.Pos 1, 1
@@ -63,6 +65,7 @@ If (USE_DCF_MODULE) Then
     If (GET_KEY() = 12) Then DCFTest() 'F1
     If (GET_KEY() = 10) Then Exit Do 'Clr
   Loop Until DCF_SYNC() 
+  DCFPower = 0
 Else
 '  SET_DATE()
 '  SET_TIME()
