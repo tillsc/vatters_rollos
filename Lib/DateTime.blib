@@ -23,6 +23,7 @@ Function ShowTime(WithSeconds As Bit, BlinkColon As Bit)
 End Function
 
 Function ShowDowString()
+  IF DOW > 6 THEN DOW = 0
   Select Case DOW
     Case BPPMonday
     LCD.Print "Mo"
@@ -52,4 +53,3 @@ Function ShowDate(WithLongYear As Bit)
   If (YEAR < 10) Then LCD.Print "0" 'Führende 0
   LCD.Print YEAR
 End Function 'ShowDate
-

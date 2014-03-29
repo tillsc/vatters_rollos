@@ -24,7 +24,7 @@ End Function
 Function isSummerTime(Tomorrow As Bit)
   Dim CalcDay As Byte
   If (Month < 3) Or (Month > 10) Then Return False
-  CalcDay = Dow mod 7
+  CalcDay = DOW mod 7
   CalcDay = Day - CalcDay
   If (Tomorrow) Then Inc CalcDay       
   If (Month = 3) And (CalcDay < 25) Then Return False
