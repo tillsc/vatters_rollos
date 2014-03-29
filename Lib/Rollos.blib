@@ -45,17 +45,6 @@ Function updateRollos()
     MinutesSinceMidnight = Minute + (Hour * 60)
     TmpDay = Day
     For Index1 = 1 To 6
-      ' * Runter *
-      TimeTableMinutesSinceMidnight = ^TimeTable + ((Index1 - 1) * 6)
-      TimeTableLastExecDayOfMonth = TimeTableMinutesSinceMidnight + 2
-      If (@TimeTableLastExecDayOfMonth <> TmpDay) And (@TimeTableMinutesSinceMidnight <= MinutesSinceMidnight) Then
-        Rollo_Index2 = (Index1 * 2) - 1 'Geht wg. Compilerfehler nicht in eine Zeile
-        If (getRolloAutomaticState(Index1)) Then
-          relaisImpulse(Rollo_Index2, LookTab(IMPULSE_LENGTH, Index1 - 1))
-        End If
-        @TimeTableMinutesSinceMidnight = calculateNextDownTime(Index1, True)
-        @TimeTableLastExecDayOfMonth = TmpDay
-      End If
       ' * Hoch *
       TimeTableMinutesSinceMidnight = ^TimeTable + ((Index1 - 1) * 6) + 3
       TimeTableLastExecDayOfMonth = TimeTableMinutesSinceMidnight + 2
@@ -65,6 +54,17 @@ Function updateRollos()
           relaisImpulse(Rollo_Index2, LookTab(IMPULSE_LENGTH, Index1 - 1))
         End If
         @TimeTableMinutesSinceMidnight = calculateNextUpTime(Index1, True)
+        @TimeTableLastExecDayOfMonth = TmpDay
+      End If
+      ' * Runter *
+      TimeTableMinutesSinceMidnight = ^TimeTable + ((Index1 - 1) * 6)
+      TimeTableLastExecDayOfMonth = TimeTableMinutesSinceMidnight + 2
+      If (@TimeTableLastExecDayOfMonth <> TmpDay) And (@TimeTableMinutesSinceMidnight <= MinutesSinceMidnight) Then
+        Rollo_Index2 = (Index1 * 2) - 1 'Geht wg. Compilerfehler nicht in eine Zeile
+        If (getRolloAutomaticState(Index1)) Then
+          relaisImpulse(Rollo_Index2, LookTab(IMPULSE_LENGTH, Index1 - 1))
+        End If
+        @TimeTableMinutesSinceMidnight = calculateNextDownTime(Index1, True)
         @TimeTableLastExecDayOfMonth = TmpDay
       End If
     Next
